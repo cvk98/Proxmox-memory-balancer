@@ -162,9 +162,7 @@ while True:
         options = {'target': recipient, 'online': 1}
         url = f'{server}/api2/json/nodes/{donor}/qemu/{vm}/migrate'
         job = requests.post(url, cookies=payload, headers=header, data=options, verify=False)
-        print(job.headers)
         print(job.status_code)
-        print(job.content)
         pid = job.json()['data']
         status = True
         while status:
