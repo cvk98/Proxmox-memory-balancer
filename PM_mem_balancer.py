@@ -87,7 +87,10 @@ while True:
             перегруженности хоста."""
             migrate_vm = dict(
                 filter(lambda item: item[1] < self.load - cluster_load * self.memory, self.vm_list.items()))
-            temp_vm_dict = migrate_vm.copy()
+            if not migrate_vm and self.overload > cluster_load * 1.025:  # Если перегруженный хост не предлагает VM
+                temp_vm_dict = self.vm_list
+            else:
+                temp_vm_dict = migrate_vm.copy()
             for vm in temp_vm_dict:
                 url = f'{server}/api2/json/nodes/{self.name}/qemu/{vm}/migrate'
                 check_request = requests.get(url, cookies=payload, verify=False)
@@ -136,9 +139,9 @@ while True:
         try:
             host_donor = max(donors, key=donors.get)
         except ValueError:
-            print(' ====================================')
+            print(' ======================================')
             print('| Нечего балансировать / Nothing to do |')
-            print(' ====================================')
+            print(' ======================================')
             exit(0)
         host_recipient = min(cl_overload_mem, key=cl_overload_mem.get)
         print(f'Донор: {host_donor.name}. Реципиент: {host_recipient.name}')
@@ -150,15 +153,15 @@ while True:
         vm_dict = dict(filter(lambda item: item[1] < recipient.threshold_mem, donor.vm_present().items()))
         print(f'VM_DICT: {vm_dict}')
         if vm_dict:
-            vm = max(vm_dict, key=vm_dict.get)
+            vm_with_maxmem = max(vm_dict, key=vm_dict.get)
         else:
             print(' =========================================')
             print('| Нечего мигрировать / Nothing to migrate |')
             print(' =========================================')
             exit(0)
-        vm_mem = vm_dict[vm]
-        print(f'{donor.name} отправляет VM-{vm}: {round(vm_mem / 1024 ** 3, 2)} GB на {recipient.name}')
-        return donor.name, recipient.name, vm
+        vm_mem = vm_dict[vm_with_maxmem]
+        print(f'{donor.name} отправляет VM-{vm_with_maxmem}: {round(vm_mem / 1024 ** 3, 2)} GB на {recipient.name}')
+        return donor.name, recipient.name, vm_with_maxmem
 
 
     def vm_migration(donor, recipient, vm):
