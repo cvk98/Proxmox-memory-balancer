@@ -2,6 +2,8 @@ import requests
 import urllib3
 import time
 
+MAXIMUM_HOST_LOAD = 0.849
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 while True:
@@ -56,6 +58,7 @@ while True:
             self.name = name
             self.memory = host_mem
             self.load = host_used_mem
+            self.threshold_mem = int(host_mem * MAXIMUM_HOST_LOAD - host_used_mem)
             self.vm_list = self.local_vm()
             self.overload = self.overload_calculate()
             self.show()
@@ -102,6 +105,7 @@ while True:
             print(f'Загрузка хоста - {round(self.load / self.memory * 100, 2)}%')
             print(f'Перегруженность хоста - ({round(self.overload * 100, 2)}%)')
             print(f'Размер избыточной загрузки ОЗУ: {round(self.host_overload_return() / 1024 ** 3, 2)} GB')
+            print(f'Может вместить без ущерба: {round(self.threshold_mem / 1024 ** 3, 2)} GB')
             print(f'Список виртуальных машин:')
             print(self.vm_list)
             print(f'Список виртуальных машин для миграции:')
@@ -143,7 +147,7 @@ while True:
 
     def vm_select(donor, recipient):
         """Выбираем VM для миграции с самого загруженного сервера, готового отдать их"""
-        vm_dict = dict(filter(lambda item: item[1] < abs(recipient.host_overload_return()), donor.vm_present().items()))
+        vm_dict = dict(filter(lambda item: item[1] < recipient.threshold_mem, donor.vm_present().items()))
         print(f'VM_DICT: {vm_dict}')
         if vm_dict:
             vm = max(vm_dict, key=vm_dict.get)
@@ -161,7 +165,8 @@ while True:
         options = {'target': recipient, 'online': 1}
         url = f'{server}/api2/json/nodes/{donor}/qemu/{vm}/migrate'
         job = requests.post(url, cookies=payload, headers=header, data=options, verify=False)
-        print(job.status_code)
+        print(f'Запрос на миграцию - {job.status_code}')
+        print(job.content)
         pid = job.json()['data']
         status = True
         while status:
