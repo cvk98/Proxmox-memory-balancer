@@ -84,15 +84,14 @@ while True:
             перегруженности хоста."""
             migrate_vm = dict(
                 filter(lambda item: item[1] < self.load - cluster_load * self.memory, self.vm_list.items()))
-            iteration = len(migrate_vm)
-            for _ in range(iteration):  # Проверяем VM на наличие локальных дисков/CD-ROM
-                vm_check = max(migrate_vm, key=migrate_vm.get)
-                request = f'{server}/api2/json/nodes/{self.name}/qemu/{vm_check}/migrate'
-                check_request = requests.get(request, cookies=payload, verify=False)
+            temp_vm_dict = migrate_vm.copy()
+            for vm in temp_vm_dict:
+                url = f'{server}/api2/json/nodes/{self.name}/qemu/{vm}/migrate'
+                check_request = requests.get(url, cookies=payload, verify=False)
                 local_disk = (check_request.json()['data']['local_disks'])
                 if local_disk:
-                    print(local_disk)
-                    del migrate_vm[vm_check]
+                    print(f'{vm} содержит {local_disk}')
+                    del migrate_vm[vm]
             return migrate_vm
 
         def show(self):
