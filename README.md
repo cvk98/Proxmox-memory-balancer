@@ -5,3 +5,6 @@ This version of the load balancer has been tested on Proxmox Virtual Environment
 If you want the load balancer not to migrate some VM, connect any ISO image to it.
 
 Mi first star! Woohoo!!
+
+This project is unlikely to be further supported, as I am writing a new one. This will be an analogue of the automatic mode of Vmware DRS.
+Stay tuned.
