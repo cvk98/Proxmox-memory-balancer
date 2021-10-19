@@ -26,6 +26,7 @@ while True:
     url = f'{server}/api2/json/nodes'
     hosts_request = requests.get(url, cookies=payload, verify=False)
     temp = (hosts_request.json()['data'])
+    print(temp)
     for _ in temp:
         if _["status"] == "online":
             cl_max_mem += int(_["maxmem"])
@@ -42,7 +43,7 @@ while True:
 
     url = f'{server}/api2/json/cluster/resources'
     hosts_resources_request = requests.get(url, cookies=payload,
-                                           verify=False)  # TODO изменить запрос на вывод только VM
+                                           verify=False)
     temp = (hosts_resources_request.json()['data'])
 
     for host in cluster_dict:
@@ -62,7 +63,6 @@ while True:
             self.vm_list = self.local_vm()
             self.overload = self.overload_calculate()
             self.show()
-            # self.vm_present()  # If no self.show - delete #
 
         def local_vm(self):
             """Определяем перечень VM, работающих на данном хосте"""
@@ -135,7 +135,6 @@ while True:
                 donors[host] = host.host_overload_return()
             else:
                 recipients.append(host)
-        print(f'ДОНОРЫ: {donors}')
         try:
             host_donor = max(donors, key=donors.get)
         except ValueError:
