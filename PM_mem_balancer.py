@@ -194,3 +194,6 @@ while True:
 
 
     vm_migration(*vm_select(*hosts_selection()))
+    print(f'Ждём 10 секунд обновления информации кластера')
+    print(f'Waiting for cluster information update')
+    time.sleep(10)
