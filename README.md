@@ -9,3 +9,6 @@ Mi first star! Woohoo!!
 
 This project is unlikely to be further supported, as I am writing a new one. This will be an analogue of the automatic mode of Vmware DRS.
 Stay tuned.
+
+!!!
+If HA is enabled in your cluster, the script cannot correctly determine the migration process. Just select the correct number of seconds in the last line of the script. In my case, it's 90 seconds.
