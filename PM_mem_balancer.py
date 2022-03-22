@@ -136,6 +136,7 @@ while True:
                 print([f'{key}:{round(values / 1024 ** 3, 2)} GB' for key, values in host.vm_present().items()])
                 donors[host] = host.host_overload_return()
             else:
+                recipients.append(host)
         try:
             host_donor = max(donors, key=donors.get)
         except ValueError:
