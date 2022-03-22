@@ -17,7 +17,8 @@ while True:
     payload = {'username': "root@pam", 'password': "YourPassword"}
     url = f'{server}/api2/json/access/ticket'
     get_token = requests.post(url, data=payload, verify=False)
-    print(get_token.status_code)
+    if not get_token.ok: raise 'Неверные авторизационные данные'
+    print(f'Успешная авторизация. Код ответа - {get_token.status_code}')
     ticket = (get_token.json()['data']['ticket'])
     token = (get_token.json()['data']['CSRFPreventionToken'])
 
@@ -26,7 +27,7 @@ while True:
     url = f'{server}/api2/json/nodes'
     hosts_request = requests.get(url, cookies=payload, verify=False)
     temp = (hosts_request.json()['data'])
-    print(temp)
+
     for _ in temp:
         if _["status"] == "online":
             cl_max_mem += int(_["maxmem"])
@@ -39,7 +40,7 @@ while True:
     print(f'Общая ОЗУ кластера = {round(cl_max_mem / 1024 ** 3)} GB')
     print(f'Занятая ОЗУ кластера = {int(cl_mem / 1024 ** 3)} GB')
     print(f'Средняя загрузка кластера = {round(cl_mem / cl_max_mem * 100, 2)} %')
-    print("Кластер -", cluster_dict)
+    # print("Кластер -", cluster_dict)
 
     url = f'{server}/api2/json/cluster/resources'
     hosts_resources_request = requests.get(url, cookies=payload,
@@ -110,9 +111,9 @@ while True:
             print(f'Размер избыточной загрузки ОЗУ: {round(self.host_overload_return() / 1024 ** 3, 2)} GB')
             print(f'Может вместить без ущерба: {round(self.threshold_mem / 1024 ** 3, 2)} GB')
             print(f'Список виртуальных машин:')
-            print(self.vm_list)
+            print([f'{key}:{round(values / 1024 ** 3, 1)} GB' for key, values in self.vm_list.items()])
             print(f'Список виртуальных машин для миграции:')
-            print(self.vm_present())
+            print([f'{key}:{round(values / 1024 ** 3, 1)} GB' for key, values in self.vm_present().items()])
 
 
     """Создаём хосты подставляя данные из парсинга и список (cluster) из хостов"""
@@ -131,7 +132,8 @@ while True:
         recipients = []
         for host in cluster:
             if host.vm_present():
-                print(f'Донор: {host.name}: {host.vm_present()}')
+                print(f'Донор: ', end="")
+                print([f'{host.name}: {key}:{round(values / 1024 ** 3, 1)} GB' for key, values in host.vm_present().items()])
                 donors[host] = host.host_overload_return()
             else:
                 recipients.append(host)
@@ -150,7 +152,6 @@ while True:
     def vm_select(donor, recipient):
         """Выбираем VM для миграции с самого загруженного сервера, готового отдать их"""
         vm_dict = dict(filter(lambda item: item[1] < recipient.threshold_mem, donor.vm_present().items()))
-        print(f'VM_DICT: {vm_dict}')
         if vm_dict:
             vm_with_maxmem = max(vm_dict, key=vm_dict.get)
         else:
@@ -168,29 +169,27 @@ while True:
         url = f'{server}/api2/json/nodes/{donor}/qemu/{vm}/migrate'
         job = requests.post(url, cookies=payload, headers=header, data=options, verify=False)
         print(f'Запрос на миграцию - {job.status_code}')
-        print(job.content)
-        pid = job.json()['data']
+        if not job.ok: raise 'Запрос на миграцию не прошёл'
+        pid = job.json()["data"]
+        print(f'Номер задания: {pid}')
         status = True
+        timer: int = 0
         while status:
+            timer += 10
             time.sleep(10)
-            url = f'{server}/api2/json/cluster/tasks'
+            url = f'{server}/api2/json/nodes/{recipient}/qemu'
             request = requests.get(url, cookies=payload, verify=False)
-            print(request.status_code)
-            tasks = request.json()['data']
-            for task in tasks:
-                if task['upid'] == pid:
-                    print(f'UPID: {pid}')
-                    print(f"PID: {task.get('pid')}")
-                    print(f'STATUS: {task.get("status")}')
-                    print("**************************")
-            for task in tasks:
-                if task['upid'] == pid and task.get('status') == 'OK':
+            running_vms = request.json()['data']
+            for _ in running_vms:
+                if _['vmid'] == vm and _['status'] == 'running':
                     print(f'{pid} - Завершена!')
                     status = False
                     break
-                elif task['upid'] == pid and not task.get('pid'):
-                    print('Миграция')
-                    break
+                elif _['vmid'] == vm and _['status'] != 'running':
+                    print(f'Что-то пошло не так. STATUS = {_["status"]}')
+                    exit(1)
+            else:
+                print(f'Миграция VM: {vm}... {timer} sec.')
 
 
     vm_migration(*vm_select(*hosts_selection()))
