@@ -5,4 +5,4 @@ This version of the load balancer has been tested on Proxmox Virtual Environment
 
 If you want the load balancer not to migrate some VM, connect any ISO image to it.
 
-This script supports clusters with HA enabled.
+This version of the script supports clusters with HA enabled.
