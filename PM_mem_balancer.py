@@ -96,8 +96,9 @@ while True:
                 url = f'{server}/api2/json/nodes/{self.name}/qemu/{vm}/migrate'
                 check_request = requests.get(url, cookies=payload, verify=False)
                 local_disk = (check_request.json()['data']['local_disks'])
-                if local_disk:
-                    print(f'{vm} содержит {local_disk}')
+                local_resources = (check_request.json()['data']['local_resources'])
+                if local_disk or local_resources:
+                    print(f'{vm} содержит {local_disk} или {local_resources}')
                     del migrate_vm[vm]
             return migrate_vm
 
