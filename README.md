@@ -1,4 +1,4 @@
-# Proxmox-memory-balancer (simple)
+# Proxmox-memory-balancer (simple) 
 
 This script is designed for one-time balancing. After reaching the maximum possible cluster balance, it stops.
 
@@ -8,3 +8,6 @@ This version of the load balancer has been tested on Proxmox Virtual Environment
 If you want the load balancer not to migrate some VM, connect any ISO image to it.
 
 This version of the script supports clusters with HA enabled.
+
+# Tested on:
+1. PyCharm 2021+, Python 3.10+, Win10
